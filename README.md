@@ -9,19 +9,19 @@
     处于“接收消息-等待-处理”的循环中，知道这个循环结束，函数返回。
         ios提供了两个这样的对象：NSRunLoop和CFRunLoopRef。
     
-##一、线程与runLoop
-###1.线程任务的类型
+## 一、线程与runLoop
+### 1.线程任务的类型
         ① 直线线程：该线程执行的任务是一条直线；
         ② 圆形线程：该线程是一个圆，不断循环，知道通过某种方式截止，ios中，圆
     形线程就是通过runLoop实现的。
-##2.线程与runLoop的关系
+## 2.线程与runLoop的关系
         ① runLoop和线程紧密相连，可以说，runLoop是为了线程而生的，没有线程，
     就没有runLoop存在的必要；
         ② 每个线程都有其对应的runLoop对象；
         ③ 主线程的runLoop是默认启动的，而其他线程的runLoop是默认没有启动的；
-##二、RunLoop输入事件来源
+## 二、RunLoop输入事件来源
         runLoop接收的输入事件来自两种来源：输入源和定时源；
-###1.输入源
+### 1.输入源
         传递异步事件，通常消息来自其他线程或程序。输入源传递异步消息给相应的处
     理程序，并调用runUntilDate方法来退出；
         当你创建输入源，需要将其分配给runLoop的一个或多个模式，模式只会在特定
@@ -36,14 +36,14 @@
         回调函数来配置源。Core Foundation会在配置源的不同地方调用回调函数，处理
         输入事件，在源从runLoop移除的时候清理它；
         ③ Cocoa上的selector源
-###2.定时源
+### 2.定时源
         定时源在预设的时间点同步传递消息，这些消息都会在特定事件或者重复的时间
     间隔，定时源则传递消息个处理线程，不会立即退出runLoop。
         定时器并不是实时机制，定时器和你的runLoop的特定模式相关，如果定时器所在
     的模式当前未被runLoop监视，那么定时器将不会开始，知道runLoop运行在响应的模式
     下。
-##三、RunLoop的相关知识点
-###1.runLoop的模式
+## 三、RunLoop的相关知识点
+### 1.runLoop的模式
         runLoop中使用mode来指定时间在运行循环中的优先级，分为：
             ① NSDefaultRunLoopMode(kCFRunLoopDefaultMode): 默认，空闲状态；
             ② UITrackingRunLoopMode：scrollView滑动时；
@@ -51,7 +51,7 @@
             ④ NSRunLoopCommonModes(kCFRunLoopCommonModes)：mode集合。
         
         ps：其中①和④是苹果公开的mode。
-###2.runLoop观察者
+### 2.runLoop观察者
         源是在合适的同步或异步事件发生时触发，而runLoop观察者则是在runLoop本身
     运行的特定时候触发，你可以使用runLoop观察者为处理某一特定事件或是进入休眠的
     程序做准备。可以将runLoop观察者和以下事件关联：
@@ -63,7 +63,7 @@
         ⑥ runLoop终止；
         在创建的时候，也可以指定runLoop观察者可以只用一次或者循环使用，若只用一
     次，那么它在启动后，会把自己从runLoop中移除，而循环的观察者不会。
-###3.runLoop事件队列
+### 3.runLoop事件队列
         每次运行runLoop，线程的runLoop会自动处理之前未处理的消息，并通知相关的
     观察者，具体的顺序如下：
         ① 通知观察者runLoop已经启动；
@@ -90,7 +90,7 @@
             ② 可以重新启动runLoop来等待下一事件；
             ③ 如果线程中有需要处理的源，但是响应的事件没有到来的时候，线程就会
         休眠等待相应事件的发生。
-###4.runLoop的使用
+### 4.runLoop的使用
         仅当在为你的程序创建辅助线程的时候，你才需要显示运行一个runLoop
         对于辅助线程，你需要判断一个runLoop是否是必须的。如果是必须的，那么你要
     自己配置并启动它，你不需要再任何情况下都去启动一个线程的runLoop。runLoop在你
@@ -100,8 +100,8 @@
         ③ Cocoa中使用任何performSelector的方法；
         ④ 使线程周期性工作。
 
-##四、CFRunLoop介绍
-###1.runLoop对外的接口
+## 四、CFRunLoop介绍
+### 1.runLoop对外的接口
         CoreFoundation中有5个关于runLoop的类：
         ① CFRunLoopRef：
         ② CFRunLoopModeRef：该类并没有对外暴露；
@@ -130,7 +130,7 @@
             ③ Source/Timer/Observer统称为mode item，一个item可以同时加入多个mode
         ，但一个item被重复加入同一个mode是没效果的；
             ④ 如果一个mode钟一个item都没有，runLoop就会退出，不进入循环。
-###2.runLoop的Mode
+### 2.runLoop的Mode
         CFRunLoop的结构如下
             struct __CFRunLoop {
                 CFMutableSetRef _commonModes;     
@@ -166,19 +166,19 @@
             ② commonModes：一个mode可以将自己标记为“Common”苏醒，每当runLoop的
         内容发生变化时，runLoop都会自动将_commonModeItems里的item同步到具有
         “Common”标记的所有Mode里。
-###3.runLoop的内部逻辑
+### 3.runLoop的内部逻辑
         实际上，runLoop就是一个函数，其内部是一个do-while循环，当你调用CFRunLoop
     ()时，线程就会一直停留在这个循环中；直到超时或被手动停止，该函数才会返回。
 ##五、runLoop的底层实现
         runLoop的核心是基于mach port的，其进入休眠时调用的函数是mach_msg()，为了
     解释这个逻辑，需要介绍下ios的系统框架；
-###1.系统层次
+### 1.系统层次
         苹果官方将系统大致划分为4个层次：
         ① 应用层：包括用户能解除到的图层应用，例如Spotlight、Aqua、SpringBoard等
         ② 应用框架层：即开发人员解除到的Cocoa等框架；
         ③ 核心框架层：包括各种核心框架、OpenGL等内容；
         ④ Darwin：即操作系统的核心，包括系统内核、驱动、Shell等内容，这层是开源的
-###2.Darwin层
+### 2.Darwin层
         其中，在硬件层上面的三个组成部分：Mach，BSD，IOKit，共同组成了XNU内核。
         ① Mach：XNU内核的内环被称作Mach，其作为一个为内核，仅提供了诸如处理器调度
     、IPC（进程间通信）等非常少量的基础服务；
@@ -198,15 +198,15 @@
     没有别人发送port消息过来，内核会将线程置于等待撞他。
         例如你在模拟器里跑起一个app，然后在app静止时点击暂停，你会看到主线程调用
     栈是停留在mach_msg_trap()这个地方。
-##六、苹果用runLoop实现的功能
-###1.AutoReleasePool
+## 六、苹果用runLoop实现的功能
+### 1.AutoReleasePool
         app启动后，苹果在主线程的runLoop里注册了两个Observer：
         ① 第一个Observer监视事件是Entry（即将进入Loop），其回调内会创建自动释放池
     ，优先级最高，保证释放池发生在所有回调之前；
         ② 第二个Observer监视了两个事件，BeforeWaiting（准备进入休眠）时释放旧的
     池并创建新的池；Exit（即将推出loop）时释放自动释放池；优先级最低，保证其释放
     池发生在其他回调之后。
-###2.事件响应
+### 2.事件响应
         苹果注册了一个Source1（基于mach port）用来接收系统事件
         当一个硬件事件（触摸/摇晃等）发生后，首先由IOKit.framework生成一个IOHIDEvent
     事件，并由SpringBoard接收，随后用mach port转发给需要的App进程。随后苹果注册
@@ -214,27 +214,27 @@
     部的分发，
         UIApplicationHandleEventQueue()方法会把IOHIDEvent处理并包装成UIEvent分发，
     通常事件比如UIButton点击，touch事件都是在这个回调中完成的。
-###3.手势识别
+### 3.手势识别
         当上边的UIApplicationHandleEventQueue()识别了手势后，首先会打断当前的touch
     系统回调，随后系统将手势标记为待处理。
         苹果注册了一个Observer检测BeforeWaiting，在这个事件的回调函数中，获取所有
     刚被标记为待处理的手势，并执行手势的回调。
-###4.界面更新
+### 4.界面更新
         当操作UI时，比如改变了Frame等，这个UIView/CALayer会被标记为待处理，并提交
     到一个全局的容器中。
         苹果注册了一个Observer监听BeforeWaiting和Exit，在回调用，会遍历所有待处理
     的UIView/CALayer以执行实际的绘制和调整，并更新UI界面。
-###5.定时器
+### 5.定时器
         一个NSTimer注册到RunLoop后，runLoop会为其重复的时间点注册号时间，runLoop
     为了节省资源，并不会再非常准确的时间点回调这个timer。timer有个属性叫做tolerance
     （宽容度），表示当时间点后，容许有多少最大误差。
-###6.PerformSelector
+### 6.PerformSelector
         当调用NSObject的PerformSelector方法后，实际上其内部会创建一个timer并添加
     到当前线程的runLoop中，如果当前线程没有runLoop，则这个方法会失效。
-###7.关于GCD
+### 7.关于GCD
         实际上runLoop底层，也用到了GCD的东西，比如runLoop用dispatch_source_t实现
     的timer，但同时GCD提供的某些方法也用到了runLoop，例如dispatch_async()。
-###8.关于网络请求
+### 8.关于网络请求
         关于网络请求的接口，自上之下有如下基层：
         ① CFSocket：是最底层的接口，只负责socket的通信；
         ② CFNetwork：是基于CFSocket等接口的上层封装，ASIHttpRequest工作与这层；
@@ -242,7 +242,7 @@
     AFNetworking工作于这一层；
         ④ NSURLSession：是ios7中新增的接口，表面上和NSURLConnection并列，但底层
     仍然用到了NSURLConnection的部分功能，AFNetworking2和Alamofire工作于这层。
-###9.NSURLConnection的工作过程
+### 9.NSURLConnection的工作过程
         通常使用 NSURLConnection 时，你会传入一个 Delegate，当调用了 [connection
     start] 后，这个 Delegate 就会不停收到事件回调。实际上，start 这个函数的内部会
     会获取 CurrentRunLoop，然后在其中的 DefaultMode 添加了4个 Source0 (即需要手动
