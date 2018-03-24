@@ -23,7 +23,7 @@
         使用[NSRunLoop currentRunLoop]可以得到当前线程的runLoop对象；
 ## 二、RunLoop的相关知识点
 ### 1.runLoop的模式
-        runLoop中使用mode来指定事件在运行循环中的优先级，分为：
+        runLoop中使用mode来指定事件在运行循环中的优先级，分为：
         ① NSDefaultRunLoopMode(kCFRunLoopDefaultMode): 默认，空闲状态；
         ② UITrackingRunLoopMode：UI模式（scrollView滑动），UI模式优先级
     最高，而且只能通过触摸事件切换；
