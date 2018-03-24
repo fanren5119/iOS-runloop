@@ -20,7 +20,7 @@
     就没有runLoop存在的必要；
         ② 每个线程都有其对应的runLoop对象；
         ③ 主线程的runLoop是默认启动的，而其他线程的runLoop是默认没有启动的；
-        使用[NSRunLoop currentRunLoop]可以得到当前线程的runLoop对象；
+        使用[NSRunLoop currentRunLoop]可以得到当前线程的runLoop对象；
 ## 二、RunLoop的相关知识点
 ### 1.runLoop的模式
         runLoop中使用mode来指定时间在运行循环中的优先级，分为：
