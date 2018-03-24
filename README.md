@@ -23,21 +23,21 @@
         使用[NSRunLoop currentRunLoop]可以得到当前线程的runLoop对象；
 ## 二、RunLoop的相关知识点
 ### 1.runLoop的模式
-        runLoop中使用mode来指定时间在运行循环中的优先级，分为：
-            ① NSDefaultRunLoopMode(kCFRunLoopDefaultMode): 默认，空闲状态；
-            ② UITrackingRunLoopMode：UI模式（scrollView滑动），UI模式优先级
-        最高，而且只能通过触摸事件切换；
-            ③ UIInitializationRunLoopMode： 启动时；
-            ④ NSRunLoopCommonModes(kCFRunLoopCommonModes)：占位模式，mode集合。
+        runLoop中使用mode来指定事件在运行循环中的优先级，分为：
+        ① NSDefaultRunLoopMode(kCFRunLoopDefaultMode): 默认，空闲状态；
+        ② UITrackingRunLoopMode：UI模式（scrollView滑动），UI模式优先级
+    最高，而且只能通过触摸事件切换；
+        ③ UIInitializationRunLoopMode： 启动时；
+        ④ NSRunLoopCommonModes(kCFRunLoopCommonModes)：占位模式，mode集合。
         
-        ps：解决定时器与scrollView滑动时候，把timer添加到commonModes的原因？
-             每种mode有三种：source、observer、timer；
-             我们在创建定时器的时候，会默认把timer添加到default模式中，但是scrollView
-        在滑动的时候，模式会切换到UI模式，此时default模式中的timer就会停止；
-             解决的办法，就是把timer添加到UI模式中，但是UI模式只有在触摸事件，才会切换，
-        没有触摸时，会切换到default模式，在default模式中，timer不会进行；
-             oc中，还有一个模式，就是commonModes，这其实不是runLoop中的一个模式，它
-        只是一种占位，是其他mode的集合；
+        ps：解决定时器与scrollView滑动时候，把timer添加到commonModes的原因？
+            每种mode有三种：source、observer、timer；
+            我们在创建定时器的时候，会默认把timer添加到default模式中，但是scrollView
+        在滑动的时候，模式会切换到UI模式，此时default模式中的timer就会停止；
+            解决的办法，就是把timer添加到UI模式中，但是UI模式只有在触摸事件，才会切换，
+        没有触摸时，会切换到default模式，在default模式中，timer不会进行；
+            oc中，还有一个模式，就是commonModes，这其实不是runLoop中的一个模式，它
+        只是一种占位，是其他mode的集合；
 ### 2.runLoop的使用
 ```
         NSThread *thread = [[NSThread alloc] initWithBlock:^{
