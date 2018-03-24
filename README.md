@@ -1,60 +1,59 @@
 # iOS-runloop
         runLoop，正如其名，表示一直运行着的循环。
-        一般来说，一个线程只能执行一个任务，执行完就会推出，如果我们需要一种
-    机制，让线程能随时处理事件但并不退出，而runLoop就是这样一个机制；而这种
-    机制的关键在于：如何管理消息/消息，如何让线程在没有处理消息的时候休眠以
-    避免资源占用，在有消息的时刻立刻被唤醒。
-        所以，runLoop实际上就是一个对象，这个对象管理了其需要处理的时间和消息
+        一般来说，一个线程只能执行一个任务，执行完就会推出，如果需要线程一直不推
+    出，那么就需要在线程中创建一个死循环，而在oc中runLoop就是这样一个死循环；
+        runLoop实际上就是一个对象，这个对象管理了其需要处理的事件和消息
     ，并提供了一个入口函数来执行上面的逻辑。线程执行了这个函数之后，就会一直
     处于“接收消息-等待-处理”的循环中，知道这个循环结束，函数返回。
         ios提供了两个这样的对象：NSRunLoop和CFRunLoopRef。
     
 ## 一、线程与runLoop
-### 1.线程任务的类型
-        ① 直线线程：该线程执行的任务是一条直线；
-        ② 圆形线程：该线程是一个圆，不断循环，知道通过某种方式截止，ios中，圆
-    形线程就是通过runLoop实现的。
+### 1.线程的终止
+        在oc中，我们一般使用属性来保存一个对象，防止这个对象的释放；
+        但是，使用属性的方式不能保存一个线程，保存线程唯一的方式，就是让这个线程
+    里面的任务一直在执行；
+        即使一个线程对象是一个局部变量，只要线程里面的任务没有执行完毕，这个线程
+    也不会释放掉；
+   
 ## 2.线程与runLoop的关系
         ① runLoop和线程紧密相连，可以说，runLoop是为了线程而生的，没有线程，
     就没有runLoop存在的必要；
         ② 每个线程都有其对应的runLoop对象；
         ③ 主线程的runLoop是默认启动的，而其他线程的runLoop是默认没有启动的；
-## 二、RunLoop输入事件来源
-        runLoop接收的输入事件来自两种来源：输入源和定时源；
-### 1.输入源
-        传递异步事件，通常消息来自其他线程或程序。输入源传递异步消息给相应的处
-    理程序，并调用runUntilDate方法来退出；
-        当你创建输入源，需要将其分配给runLoop的一个或多个模式，模式只会在特定
-    事件影响监听的源。
-        以下是输入源的类型：
-        ① 基于端口的输入源：基于端口的输入源是有内核自动发送；
-            cocoa和Core Foundation内置支持使用端口相关的对象和函数来创建基于端
-        口的源。
-            例如：在Core Foundation中，使用端口相关的函数来创建端口和runLoop源；
-        ② 自定义输入源：自定义源需要人工从其他线程发送。
-            Core Foundation中可以使用CFRunLoopSourceRef等来创建源，也可以使用
-        回调函数来配置源。Core Foundation会在配置源的不同地方调用回调函数，处理
-        输入事件，在源从runLoop移除的时候清理它；
-        ③ Cocoa上的selector源
-### 2.定时源
-        定时源在预设的时间点同步传递消息，这些消息都会在特定事件或者重复的时间
-    间隔，定时源则传递消息个处理线程，不会立即退出runLoop。
-        定时器并不是实时机制，定时器和你的runLoop的特定模式相关，如果定时器所在
-    的模式当前未被runLoop监视，那么定时器将不会开始，知道runLoop运行在响应的模式
-    下。
-## 三、RunLoop的相关知识点
+        使用[NSRunLoop currentRunLoop]可以得到当前线程的runLoop对象；
+## 二、RunLoop的相关知识点
 ### 1.runLoop的模式
         runLoop中使用mode来指定时间在运行循环中的优先级，分为：
             ① NSDefaultRunLoopMode(kCFRunLoopDefaultMode): 默认，空闲状态；
-            ② UITrackingRunLoopMode：scrollView滑动时；
-            ③ UIInitializationRunLoopMode： 启动时；
-            ④ NSRunLoopCommonModes(kCFRunLoopCommonModes)：mode集合。
+            ② UITrackingRunLoopMode：UI模式（scrollView滑动），UI模式优先级
+        最高，而且只能通过触摸事件切换；
+            ③ UIInitializationRunLoopMode： 启动时；
+            ④ NSRunLoopCommonModes(kCFRunLoopCommonModes)：占位模式，mode集合。
         
-        ps：其中①和④是苹果公开的mode。
-### 2.runLoop观察者
-        源是在合适的同步或异步事件发生时触发，而runLoop观察者则是在runLoop本身
-    运行的特定时候触发，你可以使用runLoop观察者为处理某一特定事件或是进入休眠的
-    程序做准备。可以将runLoop观察者和以下事件关联：
+        ps：解决定时器与scrollView滑动时候，把timer添加到commonModes的原因？
+             每种mode有三种：source、observer、timer；
+             我们在创建定时器的时候，会默认把timer添加到default模式中，但是scrollView
+        在滑动的时候，模式会切换到UI模式，此时default模式中的timer就会停止；
+             解决的办法，就是把timer添加到UI模式中，但是UI模式只有在触摸事件，才会切换，
+        没有触摸时，会切换到default模式，在default模式中，timer不会进行；
+             oc中，还有一个模式，就是commonModes，这其实不是runLoop中的一个模式，它
+        只是一种占位，是其他mode的集合；
+### 2.runLoop的使用
+```
+        NSThread *thread = [[NSThread alloc] initWithBlock:^{
+            NSTimer *timer = [NSTimer timerWithTimeInterval:1.0 target:self 
+                selector:@selector(timerMethod) userInfo:nil repeats:YES];
+            [[NSRunLoop mainRunLoop] addTimer:timer forMode: NSRunLoopCommonModes];
+            while(!_isFinished) {
+                NSDate *date = [NSDate dateWithTimeIntervalSinceNow:0.00001];
+                [[NSRunLoop mainRunLoop] runUntilDate:date];
+            }
+        }];
+        //这里可以使用isFinished属性，来控制runLoop停止，然后终止分线程；
+```
+### 3.runLoop观察者（observer）
+        runLoop观察者则是在runLoop本身运行的特定时候触发，你可以使用runLoop观察者为处
+    理某一特定事件或是进入休眠的程序做准备。可以将runLoop观察者和以下事件关联：
         ① runLoop入口
         ② runLoop何时处理一个定时器；
         ③ runLoop何时处理一个输入源；
@@ -63,7 +62,7 @@
         ⑥ runLoop终止；
         在创建的时候，也可以指定runLoop观察者可以只用一次或者循环使用，若只用一
     次，那么它在启动后，会把自己从runLoop中移除，而循环的观察者不会。
-### 3.runLoop事件队列
+### 4.runLoop事件队列
         每次运行runLoop，线程的runLoop会自动处理之前未处理的消息，并通知相关的
     观察者，具体的顺序如下：
         ① 通知观察者runLoop已经启动；
@@ -90,16 +89,30 @@
             ② 可以重新启动runLoop来等待下一事件；
             ③ 如果线程中有需要处理的源，但是响应的事件没有到来的时候，线程就会
         休眠等待相应事件的发生。
-### 4.runLoop的使用
-        仅当在为你的程序创建辅助线程的时候，你才需要显示运行一个runLoop
-        对于辅助线程，你需要判断一个runLoop是否是必须的。如果是必须的，那么你要
-    自己配置并启动它，你不需要再任何情况下都去启动一个线程的runLoop。runLoop在你
-    要和线程有更多的交互时才需要，比如以下情况：
-        ① 使用端口或者自定义输入源来和其他线程通信；
-        ② 使用线程的定时器；
-        ③ Cocoa中使用任何performSelector的方法；
-        ④ 使线程周期性工作。
-
+## 三、RunLoop输入事件来源
+        runLoop接收的输入事件来自两种来源：输入源和定时源；
+### 1.输入源
+        传递异步事件，通常消息来自其他线程或程序。输入源传递异步消息给相应的处
+    理程序，并调用runUntilDate方法来退出；
+        当你创建输入源，需要将其分配给runLoop的一个或多个模式，模式只会在特定
+    事件影响监听的源。
+        以下是输入源的类型：
+        ① 基于端口的输入源：基于端口的输入源是有内核自动发送；
+            cocoa和Core Foundation内置支持使用端口相关的对象和函数来创建基于端
+        口的源。
+            例如：在Core Foundation中，使用端口相关的函数来创建端口和runLoop源；
+        ② 自定义输入源：自定义源需要人工从其他线程发送。
+            Core Foundation中可以使用CFRunLoopSourceRef等来创建源，也可以使用
+        回调函数来配置源。Core Foundation会在配置源的不同地方调用回调函数，处理
+        输入事件，在源从runLoop移除的时候清理它；
+        ③ Cocoa上的selector源
+### 2.定时源
+        定时源在预设的时间点同步传递消息，这些消息都会在特定事件或者重复的时间
+    间隔，定时源则传递消息个处理线程，不会立即退出runLoop。
+        定时器并不是实时机制，定时器和你的runLoop的特定模式相关，如果定时器所在
+    的模式当前未被runLoop监视，那么定时器将不会开始，知道runLoop运行在响应的模式
+    下。
+    
 ## 四、CFRunLoop介绍
 ### 1.runLoop对外的接口
         CoreFoundation中有5个关于runLoop的类：
@@ -169,7 +182,7 @@
 ### 3.runLoop的内部逻辑
         实际上，runLoop就是一个函数，其内部是一个do-while循环，当你调用CFRunLoop
     ()时，线程就会一直停留在这个循环中；直到超时或被手动停止，该函数才会返回。
-##五、runLoop的底层实现
+## 五、runLoop的底层实现
         runLoop的核心是基于mach port的，其进入休眠时调用的函数是mach_msg()，为了
     解释这个逻辑，需要介绍下ios的系统框架；
 ### 1.系统层次
